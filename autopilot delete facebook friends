@@ -1,0 +1,68 @@
+(async () => {
+  const delay = (ms) => new Promise(res => setTimeout(res, ms));
+  const logStyle = 'background: #222; color: #80ff80; padding: 2px 6px; border-radius: 3px;';
+
+  const scrollAndLoad = async () => {
+    window.scrollTo(0, document.body.scrollHeight);
+    await delay(3000);
+  };
+
+  const getUnfriendButtons = () =>
+    Array.from(document.querySelectorAll('div[aria-label^="ตัวเลือกเพิ่มเติมสำหรับ"]'));
+
+  let totalRemoved = 0;
+  const roundLimit = 50;
+
+  const startRound = async () => {
+    let unfriendedThisRound = 0;
+
+    while (unfriendedThisRound < roundLimit) {
+      const buttons = getUnfriendButtons().slice(totalRemoved);
+
+      if (buttons.length === 0) {
+        console.warn('%c⚠️ ไม่พบปุ่ม "ตัวเลือกเพิ่มเติมสำหรับ..." กรุณาเลื่อนหน้าหรือโหลดเพื่อนเพิ่ม', logStyle);
+        await scrollAndLoad();
+        continue;
+      }
+
+      for (let btn of buttons) {
+        if (unfriendedThisRound >= roundLimit) break;
+
+        btn.scrollIntoView({ behavior: "smooth" });
+        btn.click();
+        await delay(1000);
+
+        const unfriendBtn = Array.from(document.querySelectorAll('span'))
+          .find(el => el.innerText.trim() === 'เลิกเป็นเพื่อน');
+
+        if (unfriendBtn) {
+          unfriendBtn.click();
+          await delay(1000);
+
+          const confirmBtn = Array.from(document.querySelectorAll('span'))
+            .find(el => el.innerText.trim() === 'ยืนยัน');
+
+          if (confirmBtn) {
+            confirmBtn.click();
+            totalRemoved++;
+            unfriendedThisRound++;
+            console.log(`%c✅ ลบเพื่อนคนที่ ${totalRemoved}`, logStyle);
+            await delay(3000);
+          }
+        } else {
+          console.warn('%c❌ ไม่พบปุ่มเลิกเป็นเพื่อน', logStyle);
+        }
+      }
+
+      if (unfriendedThisRound < roundLimit) {
+        await scrollAndLoad();
+      }
+    }
+
+    alert(`✅ ลบเพื่อนครบ ${roundLimit} คนแล้ว! จะเริ่มรอบถัดไปอัตโนมัติ...`);
+    await delay(5000);
+    startRound();
+  };
+
+  await startRound();
+})();
